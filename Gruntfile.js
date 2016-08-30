@@ -26,11 +26,19 @@ module.exports = function(grunt) {
 				files: '**/*.scss',
 				tasks: ['sass']
 			}
+		},
+		uglify: {
+			my_target: {
+				files: {
+					'public/scripts/app.built.min.js': ['public/scripts/app.built.js']
+				}
+			}
 		}
 	});
 	grunt.loadNpmTasks('grunt-react');
 	grunt.loadNpmTasks('grunt-browserify');
 	grunt.loadNpmTasks('grunt-contrib-sass');
 	grunt.loadNpmTasks('grunt-contrib-watch');
+	
 	grunt.registerTask('default', ['sass' ,'browserify', 'watch']);
 }

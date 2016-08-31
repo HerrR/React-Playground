@@ -13,25 +13,60 @@
   border-radius: 2px;
   color: #2b2b2b; }
 
-.deadlineRow {
-  padding-left: 20px;
-  padding-right: 20px;
-  box-sizing: border-box;
-  width: 100%;
-  line-height: 2em; }
-  .deadlineRow.header {
-    line-height: 2.5em;
-    background-color: brown;
-    font-weight: bold;
-    color: #FFF; }
-  .deadlineRow.even {
-    background-color: #efefef;
-    color: #2b2b2b; }
-  .deadlineRow.odd {
-    color: #2b2b2b; }
+.deadlinesTable {
+  display: inline-table;
+  width: 79%;
+  vertical-align: top; }
 
-.column-25 {
+.sidebar {
   display: inline-block;
-  width: 25%; }
+  width: 20%;
+  vertical-align: top;
+  margin-right: 1%;
+  padding: 10px;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box; }
+
+table {
+  border: none; }
+
+th {
+  line-height: 2.5em;
+  background-color: #3e3d50;
+  font-weight: bold;
+  color: #FFF; }
+
+td {
+  line-height: 1.5em;
+  padding: 5px; }
+
+td.urgencyIndicator {
+  color: #efefef; }
+  td.urgencyIndicator.chill {
+    background-color: #1fb51f; }
+  td.urgencyIndicator.medium {
+    background-color: #c7c71d; }
+  td.urgencyIndicator.stress {
+    background-color: #a52a2a; }
+
+tr:nth-child(even) {
+  background-color: #efefef;
+  color: #2b2b2b; }
+
+tr:nth-child(odd) {
+  color: #2b2b2b; }
+
+.cursor {
+  cursor: pointer; }
+
+.status {
+  color: #efefef; }
+  .status.untouched {
+    background-color: #a52a2a; }
+  .status.started {
+    background-color: #c7c71d; }
+  .status.finished {
+    background-color: #1fb51f; }
 
 /*# sourceMappingURL=style.css.map */

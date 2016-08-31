@@ -4,7 +4,7 @@ var Header = React.createClass({
     displayName: 'Header',
     render() {
         return (
-            <div className="main-header">Länkar till typ ny deadline osv.</div>
+            <div className="main-header">Länkar till typ ny deadline, refresh osv.</div>
         );
     }
 });

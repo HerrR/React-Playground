@@ -1,5 +1,15 @@
 $lightGray: #efefef;
 $darkGray: #2b2b2b;
+$darkRed: #a52a2a;
+$successGreen: #1fb51f;
+$darkYellow: #c7c71d;
+$fadeBlue: #3e3d50;
+
+@mixin box-sizing($type){
+	-webkit-box-sizing:$type;
+	-moz-box-sizing:$type;
+	box-sizing:$type;
+}
 
 .wrapper {
 	font-family:sans-serif;
@@ -18,28 +28,68 @@ $darkGray: #2b2b2b;
 	color:$darkGray;
 }
 
-.deadlineRow {
-	padding-left:20px;
-	padding-right:20px;
-	box-sizing:border-box;
-	width:100%;
-	line-height:2em;
-	&.header {
-		line-height:2.5em;
-		background-color:brown;
-		font-weight:bold;
-		color:#FFF;
-	}
-	&.even {
-		background-color:$lightGray;
-		color:$darkGray;
-	}
-	&.odd {
-		color:$darkGray;
-	}
+.deadlinesTable {
+	display:inline-table;
+	width:79%;
+	vertical-align:top;
 }
 
-.column-25 {
+.sidebar {
 	display:inline-block;
-	width:25%;
+	width:20%;
+	vertical-align:top;
+	margin-right:1%;
+	padding:10px;
+	@include box-sizing(border-box);
+}
+
+table {
+	border:none;
+}
+
+th {
+	line-height:2.5em;
+	// background-color:$darkRed;
+	background-color:$fadeBlue;
+	font-weight:bold;
+	color:#FFF;
+}
+
+td {
+	line-height:1.5em;
+	padding:5px;
+}
+
+td.urgencyIndicator {
+	color:$lightGray;
+
+	&.chill {background-color: $successGreen;}
+	&.medium {background-color: $darkYellow;}
+	&.stress {background-color: $darkRed;}
+}
+
+tr:nth-child(even) {
+	background-color:$lightGray;
+	color:$darkGray;
+}
+
+tr:nth-child(odd) {
+	color:$darkGray;
+}
+
+.cursor {
+	cursor:pointer;
+}
+
+.status {
+	color:$lightGray;
+	&.untouched {
+		background-color:$darkRed;
+	}
+	&.started {
+		background-color:$darkYellow;
+	}
+	&.finished {
+		background-color:$successGreen;
+	}
 }

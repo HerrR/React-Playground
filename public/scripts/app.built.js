@@ -2,76 +2,218 @@
 var React = require('react');
 var Header = require('./Header.jsx');
 var Body = require('./Body.jsx');
+var Sidebar = require('./Sidebar.jsx');
 
 var App = React.createClass({
     displayName: 'App',
 
     getInitialState() {
-    	var deadlines = [
-    		{
-    			name: "Deadline 1", 
-    			due: new Date('2016-08-30'), 
-    			status: 'Started'
-    		},
-    		{
-    			name: "Deadline 2", 
-    			due: new Date('2016-09-04'), 
-    			status: 'Incomplete'
-    		}
-    	]; 
+        var deadlines = this.props.deadlines;
+        var uniqueCourses = [];
+
+        // Filter out unique course codes
+        for (var i = deadlines.length - 1; i >= 0; i--) {
+            if(uniqueCourses.indexOf(deadlines[i].course) == -1){
+                uniqueCourses.push(deadlines[i].course);
+            }
+        };
+
         return {
-        	message: "Hello World!",
-        	deadlines: deadlines
+            courses: uniqueCourses.slice(0),
+            displayCourses: uniqueCourses.slice(0)
         };
     },
 
     render() {
-    	var message = this.state.message;
-    	var deadlines = this.state.deadlines;
         return (
         	React.createElement("div", {className: "wrapper"}, 
-            	React.createElement("div", null, React.createElement(Header, null)), 
-            	React.createElement("div", null, React.createElement(Body, {message: message, deadlines: deadlines}))
+            	React.createElement(Header, null), 
+                React.createElement(Sidebar, {courses: this.state.courses, displayCourses: this.state.displayCourses, addRemoveCourseDisplay: this.addRemoveCourseDisplay}), 
+            	React.createElement(Body, {deadlines: this.props.deadlines, displayCourses: this.state.displayCourses})
             )
         );
+    },
+
+    addRemoveCourseDisplay(course){
+
+        var courseIndex = this.state.displayCourses.indexOf(course);
+        var previousCourses = this.state.displayCourses;
+        
+        if(courseIndex == -1){
+            previousCourses.push(course);
+            this.setState({displayCourses: previousCourses});
+        } else {
+            previousCourses.splice(courseIndex, 1);
+            this.setState({displayCourses: previousCourses});
+        }
     }
 });
 
 module.exports = App;
 
+
+// Sample data
+var sampleData = [
+    {
+        course: "DM2558",
+        name: "A longer name for a deadline", 
+        due: new Date('2016-08-30'), 
+        status: 'Started'
+    },
+    {
+        course: "DM2571",
+        name: "An even longer name for a deadline", 
+        due: new Date('2016-09-04'), 
+        status: 'Untouched'
+    },
+    {
+        course: "DM2571",
+        name: "Deadline 3", 
+        due: new Date('2016-09-06'), 
+        status: 'Finished'
+    },
+    {
+        course: "DM2558",
+        name: "Deadline 4", 
+        due: new Date('2016-09-01'), 
+        status: 'Untouched'
+    },
+    {
+        course: "DH2413",
+        name: "Deadline 5", 
+        due: new Date('2016-09-03'), 
+        status: 'Started'
+    }
+];
+
 ReactDOM.render(
-	React.createElement(App, null),
+	React.createElement(App, {deadlines: sampleData}),
 	document.getElementById('app')
 )
-},{"./Body.jsx":2,"./Header.jsx":5,"react":38}],2:[function(require,module,exports){
+},{"./Body.jsx":2,"./Header.jsx":6,"./Sidebar.jsx":7,"react":40}],2:[function(require,module,exports){
 var React = require('react');
 var DeadlineRow = require('./DeadlineRow.jsx');
 var DeadlinesHeader = require('./DeadlinesHeader.jsx');
 
 var Body = React.createClass({
     displayName: 'Body',
+
+    getInitialState() {
+        return {
+            orderBy: {type: "due", direction:"asc"}  
+        };
+    },
+
+    generateDeadlineRows(deadlines){
+        var orderBy = this.state.orderBy;
+        
+        function normalComparison(a,b){
+            if(a[orderBy.type] < b[orderBy.type]){
+                if(orderBy.direction === "desc") {
+                    return -1;
+                } else {
+                    return 1;
+                }
+            } else if (a[orderBy.type] > b[orderBy.type]){
+                if(orderBy.direction === "desc") {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            } else {
+                return 0
+            }
+        }
+
+        function statusComparison(a,b){
+            var statusValues = {"Untouched": -1, "Started":0, "Finished": 1};
+            if(statusValues[a[orderBy.type]] < statusValues[b[orderBy.type]]){
+                if(orderBy.direction === "desc"){
+                    return 1;
+                } else {
+                    return -1;
+                }
+            } else if(statusValues[a[orderBy.type]] > statusValues[b[orderBy.type]]) {
+                if(orderBy.direction === "desc"){
+                    return -1;
+                } else {
+                    return 1;
+                }
+            } else {
+                return 0;
+            }
+        }
+
+        if(orderBy.type === "status"){
+            deadlines.sort(statusComparison);
+        } else {
+            deadlines.sort(normalComparison);
+        }
+
+
+        var DeadlineRows = [];
+        
+        for (var i = deadlines.length - 1; i >= 0; i--) {
+            if(this.props.displayCourses.indexOf(deadlines[i].course) != -1){
+                deadlines[i].todaysDate = new Date();
+                DeadlineRows.push(React.createElement(DeadlineRow, {info:  deadlines[i], key: i}));    
+            }
+        };
+
+        return DeadlineRows;
+
+    },
+
+    orderBy(type){
+        if(this.state.orderBy.type === type){
+            if(this.state.orderBy.direction === "desc"){
+                this.setState({orderBy: {type:this.state.orderBy.type, direction: "asc"}});
+            } else {
+                this.setState({orderBy: {type:this.state.orderBy.type, direction: "desc"}});
+            }
+        } else {
+            this.setState({orderBy: {type:type, direction: "desc"}});
+        }
+    },
+    
     render() {
 
-    	var DeadlineRows = [];
-    	this.props.deadlines.forEach(
-    		function(deadline, index){
-    			deadline.todaysDate = new Date();
-    			DeadlineRows.push(React.createElement(DeadlineRow, {index: index, info: deadline, key: index}))
-
-    		}
-    	);
+        var DeadlineRows = this.generateDeadlineRows(this.props.deadlines);
 
         return (
-        	React.createElement("div", null, 
-        		React.createElement(DeadlinesHeader, null), 
-            	DeadlineRows
+            React.createElement("table", {className: "deadlinesTable", cellSpacing: "1", cellPadding: "1"}, 
+                React.createElement(DeadlinesHeader, {updateOrder: this.orderBy, orderedBy: this.state.orderBy}), 
+                DeadlineRows
             )
         );
     }
 });
 
 module.exports = Body;
-},{"./DeadlineRow.jsx":3,"./DeadlinesHeader.jsx":4,"react":38}],3:[function(require,module,exports){
+},{"./DeadlineRow.jsx":4,"./DeadlinesHeader.jsx":5,"react":40}],3:[function(require,module,exports){
+var React = require('react');
+
+var CourseRow = React.createClass({
+    displayName: 'CourseRow',
+
+    render() {
+    	var name = this.props.name;
+    	var checked = false;
+
+    	if(this.props.displayCourses.indexOf(name) != -1){
+    		checked = true;
+    	}
+
+        return (
+            React.createElement("div", null, 
+            	React.createElement("input", {type: "checkbox", checked: checked, onClick: this.props.addRemoveCourseDisplay.bind(null, name)}), " ", name
+            )
+        );
+    }
+});
+
+module.exports = CourseRow;
+},{"react":40}],4:[function(require,module,exports){
 var React = require('react');
 
 var DeadlineRow = React.createClass({
@@ -88,54 +230,126 @@ var DeadlineRow = React.createClass({
     },
 
     render() {
-		var timeToDeadline = this.props.info.todaysDate.getTime() - this.props.info.due.getTime();
+		var timeToDeadline = this.props.info.due.getTime() - this.props.info.todaysDate.getTime();
     	var daysToDeadline = Math.ceil(timeToDeadline / (1000 * 3600 * 24));
-    	console.log("Time to deadline: ", timeToDeadline, "Days to deadline: ",daysToDeadline);
-    	var rowType = this.props.index%2 == 0 ? "odd" : "even";
+
+        var dueMessage = daysToDeadline+" days left"
+        
+        if(daysToDeadline >= 7){
+            var dueUrgency = "urgencyIndicator chill";
+        } else if ((7 > daysToDeadline) && (daysToDeadline >= 3)) {
+            var dueUrgency = "urgencyIndicator medium";
+        } else if((3 > daysToDeadline) && (daysToDeadline >= 0)){
+            var dueUrgency = "urgencyIndicator stress";
+        } else {
+            if(this.props.info.status === "Finished"){
+                dueMessage = "Finished";
+                var dueUrgency = "urgencyIndicator chill";
+            } else {
+                dueMessage = "DL passed!";
+                var dueUrgency = "urgencyIndicator stress";
+            }
+        }
+
         return (
-        	React.createElement("div", {className: "deadlineRow "+rowType}, 
-            	React.createElement("div", {className: "column-25"}, this.props.info.name), 
-            	React.createElement("div", {className: "column-25"}, this.renderDate()), 
-            	React.createElement("div", {className: "column-25"}, daysToDeadline), 
-            	React.createElement("div", {className: "column-25"}, this.props.info.status)
+            React.createElement("tr", null, 
+                React.createElement("td", null, this.props.info.course), 
+                React.createElement("td", null, this.props.info.name), 
+                React.createElement("td", null, this.renderDate()), 
+                React.createElement("td", {className: dueUrgency}, dueMessage), 
+                React.createElement("td", {className: "status "+this.props.info.status.toLowerCase()}, 
+                    this.props.info.status
+                )
             )
         );
     }
 });
+                    // <select name="options">
+                    //     <option value="Finished">Finished</option>
+                    //     <option value="Started">Started</option>
+                    //     <option value="Untouched">Untouched</option>
+                    // </select>
 
 module.exports = DeadlineRow;
-},{"react":38}],4:[function(require,module,exports){
+},{"react":40}],5:[function(require,module,exports){
 var React = require('react');
 
 var DeadlinesHeader = React.createClass({
     displayName: 'DeadlinesHeader',
+
+    headerClass(type){
+        if(this.props.orderedBy === null){
+            return "fa fa-sort";
+        } else {
+            if(type === this.props.orderedBy.type){
+                return "fa fa-sort-"+this.props.orderedBy.direction;
+            } else {
+                return "fa fa-sort";
+            }
+        }
+
+    },
+
     render() {
         return (
-        	React.createElement("div", {className: "deadlineRow header"}, 
-        		React.createElement("div", {className: "column-25"}, "Name ", React.createElement("i", {className: "fa fa-sort"})), 
-        		React.createElement("div", {className: "column-25"}, "Due date ", React.createElement("i", {className: "fa fa-sort"})), 
-        		React.createElement("div", {className: "column-25"}, "Days left ", React.createElement("i", {className: "fa fa-refresh"}), " ", React.createElement("i", {className: "fa fa-sort"})), 
-        		React.createElement("div", {className: "column-25"}, "Status ", React.createElement("i", {className: "fa fa-sort"}))
-        	)
+            React.createElement("tr", null, 
+                React.createElement("th", null, 
+                    "Course ", React.createElement("i", {className: this.headerClass("course")+" cursor", onClick: this.props.updateOrder.bind(null, "course")})
+                ), 
+                React.createElement("th", null, 
+                    "Name ", React.createElement("i", {className: this.headerClass("name")+" cursor", onClick: this.props.updateOrder.bind(null, "name")})
+                ), 
+                React.createElement("th", {colSpan: "2"}, 
+                    "Due date ", React.createElement("i", {className: this.headerClass("due")+" cursor", onClick: this.props.updateOrder.bind(null, "due")})
+                ), 
+                React.createElement("th", null, 
+                    "Status ", React.createElement("i", {className: this.headerClass("status")+" cursor", onClick: this.props.updateOrder.bind(null, "status")})
+                )
+            )
+        	
         );
     }
 });
 
 module.exports = DeadlinesHeader;
-},{"react":38}],5:[function(require,module,exports){
+},{"react":40}],6:[function(require,module,exports){
 var React = require('react');
 
 var Header = React.createClass({
     displayName: 'Header',
     render() {
         return (
-            React.createElement("div", {className: "main-header"}, "Länkar till typ ny deadline osv.")
+            React.createElement("div", {className: "main-header"}, "Länkar till typ ny deadline, refresh osv.")
         );
     }
 });
 
 module.exports = Header;
-},{"react":38}],6:[function(require,module,exports){
+},{"react":40}],7:[function(require,module,exports){
+var React = require('react');
+var CourseRow = require('./CourseRow.jsx');
+
+var Sidebar = React.createClass({
+    displayName: 'Sidebar',
+
+    render() {
+
+    	var courses = [];
+    	for (var i = this.props.courses.length - 1; i >= 0; i--) {
+    		courses.push(React.createElement(CourseRow, {name: this.props.courses[i], key: i, displayCourses: this.props.displayCourses, addRemoveCourseDisplay: this.props.addRemoveCourseDisplay}))
+    	};
+
+        return (
+            React.createElement("div", {className: "sidebar"}, 
+            	React.createElement("h3", null, "Courses"), 
+            	courses
+            )
+        );
+    }
+});
+
+module.exports = Sidebar;
+},{"./CourseRow.jsx":3,"react":40}],8:[function(require,module,exports){
 "use strict";
 
 /**
@@ -174,7 +388,7 @@ emptyFunction.thatReturnsArgument = function (arg) {
 };
 
 module.exports = emptyFunction;
-},{}],7:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -196,7 +410,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = emptyObject;
 }).call(this,require('_process'))
-},{"_process":13}],8:[function(require,module,exports){
+},{"_process":15}],10:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -248,7 +462,7 @@ function invariant(condition, format, a, b, c, d, e, f) {
 
 module.exports = invariant;
 }).call(this,require('_process'))
-},{"_process":13}],9:[function(require,module,exports){
+},{"_process":15}],11:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -298,7 +512,7 @@ var keyMirror = function keyMirror(obj) {
 
 module.exports = keyMirror;
 }).call(this,require('_process'))
-},{"./invariant":8,"_process":13}],10:[function(require,module,exports){
+},{"./invariant":10,"_process":15}],12:[function(require,module,exports){
 "use strict";
 
 /**
@@ -333,7 +547,7 @@ var keyOf = function keyOf(oneKeyObj) {
 };
 
 module.exports = keyOf;
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-2015, Facebook, Inc.
@@ -402,7 +616,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = warning;
 }).call(this,require('_process'))
-},{"./emptyFunction":6,"_process":13}],12:[function(require,module,exports){
+},{"./emptyFunction":8,"_process":15}],14:[function(require,module,exports){
 'use strict';
 /* eslint-disable no-unused-vars */
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -487,7 +701,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],13:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -649,7 +863,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],14:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -709,7 +923,7 @@ var KeyEscapeUtils = {
 };
 
 module.exports = KeyEscapeUtils;
-},{}],15:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -833,7 +1047,7 @@ var PooledClass = {
 
 module.exports = PooledClass;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":36,"_process":13,"fbjs/lib/invariant":8}],16:[function(require,module,exports){
+},{"./reactProdInvariant":38,"_process":15,"fbjs/lib/invariant":10}],18:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -925,7 +1139,7 @@ var React = {
 
 module.exports = React;
 }).call(this,require('_process'))
-},{"./ReactChildren":17,"./ReactClass":18,"./ReactComponent":19,"./ReactDOMFactories":22,"./ReactElement":23,"./ReactElementValidator":24,"./ReactPropTypes":28,"./ReactPureComponent":30,"./ReactVersion":31,"./onlyChild":35,"_process":13,"fbjs/lib/warning":11,"object-assign":12}],17:[function(require,module,exports){
+},{"./ReactChildren":19,"./ReactClass":20,"./ReactComponent":21,"./ReactDOMFactories":24,"./ReactElement":25,"./ReactElementValidator":26,"./ReactPropTypes":30,"./ReactPureComponent":32,"./ReactVersion":33,"./onlyChild":37,"_process":15,"fbjs/lib/warning":13,"object-assign":14}],19:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -1117,7 +1331,7 @@ var ReactChildren = {
 };
 
 module.exports = ReactChildren;
-},{"./PooledClass":15,"./ReactElement":23,"./traverseAllChildren":37,"fbjs/lib/emptyFunction":6}],18:[function(require,module,exports){
+},{"./PooledClass":17,"./ReactElement":25,"./traverseAllChildren":39,"fbjs/lib/emptyFunction":8}],20:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -1852,7 +2066,7 @@ var ReactClass = {
 
 module.exports = ReactClass;
 }).call(this,require('_process'))
-},{"./ReactComponent":19,"./ReactElement":23,"./ReactNoopUpdateQueue":25,"./ReactPropTypeLocationNames":26,"./ReactPropTypeLocations":27,"./reactProdInvariant":36,"_process":13,"fbjs/lib/emptyObject":7,"fbjs/lib/invariant":8,"fbjs/lib/keyMirror":9,"fbjs/lib/keyOf":10,"fbjs/lib/warning":11,"object-assign":12}],19:[function(require,module,exports){
+},{"./ReactComponent":21,"./ReactElement":25,"./ReactNoopUpdateQueue":27,"./ReactPropTypeLocationNames":28,"./ReactPropTypeLocations":29,"./reactProdInvariant":38,"_process":15,"fbjs/lib/emptyObject":9,"fbjs/lib/invariant":10,"fbjs/lib/keyMirror":11,"fbjs/lib/keyOf":12,"fbjs/lib/warning":13,"object-assign":14}],21:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -1973,7 +2187,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = ReactComponent;
 }).call(this,require('_process'))
-},{"./ReactNoopUpdateQueue":25,"./canDefineProperty":32,"./reactProdInvariant":36,"_process":13,"fbjs/lib/emptyObject":7,"fbjs/lib/invariant":8,"fbjs/lib/warning":11}],20:[function(require,module,exports){
+},{"./ReactNoopUpdateQueue":27,"./canDefineProperty":34,"./reactProdInvariant":38,"_process":15,"fbjs/lib/emptyObject":9,"fbjs/lib/invariant":10,"fbjs/lib/warning":13}],22:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2016-present, Facebook, Inc.
@@ -2318,7 +2532,7 @@ var ReactComponentTreeHook = {
 
 module.exports = ReactComponentTreeHook;
 }).call(this,require('_process'))
-},{"./ReactCurrentOwner":21,"./reactProdInvariant":36,"_process":13,"fbjs/lib/invariant":8,"fbjs/lib/warning":11}],21:[function(require,module,exports){
+},{"./ReactCurrentOwner":23,"./reactProdInvariant":38,"_process":15,"fbjs/lib/invariant":10,"fbjs/lib/warning":13}],23:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -2350,7 +2564,7 @@ var ReactCurrentOwner = {
 };
 
 module.exports = ReactCurrentOwner;
-},{}],22:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -2523,7 +2737,7 @@ var ReactDOMFactories = {
 
 module.exports = ReactDOMFactories;
 }).call(this,require('_process'))
-},{"./ReactElement":23,"./ReactElementValidator":24,"_process":13}],23:[function(require,module,exports){
+},{"./ReactElement":25,"./ReactElementValidator":26,"_process":15}],25:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -2890,7 +3104,7 @@ ReactElement.REACT_ELEMENT_TYPE = REACT_ELEMENT_TYPE;
 
 module.exports = ReactElement;
 }).call(this,require('_process'))
-},{"./ReactCurrentOwner":21,"./canDefineProperty":32,"_process":13,"fbjs/lib/warning":11,"object-assign":12}],24:[function(require,module,exports){
+},{"./ReactCurrentOwner":23,"./canDefineProperty":34,"_process":15,"fbjs/lib/warning":13,"object-assign":14}],26:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -3121,7 +3335,7 @@ var ReactElementValidator = {
 
 module.exports = ReactElementValidator;
 }).call(this,require('_process'))
-},{"./ReactComponentTreeHook":20,"./ReactCurrentOwner":21,"./ReactElement":23,"./ReactPropTypeLocations":27,"./canDefineProperty":32,"./checkReactTypeSpec":33,"./getIteratorFn":34,"_process":13,"fbjs/lib/warning":11}],25:[function(require,module,exports){
+},{"./ReactComponentTreeHook":22,"./ReactCurrentOwner":23,"./ReactElement":25,"./ReactPropTypeLocations":29,"./canDefineProperty":34,"./checkReactTypeSpec":35,"./getIteratorFn":36,"_process":15,"fbjs/lib/warning":13}],27:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2015-present, Facebook, Inc.
@@ -3220,7 +3434,7 @@ var ReactNoopUpdateQueue = {
 
 module.exports = ReactNoopUpdateQueue;
 }).call(this,require('_process'))
-},{"_process":13,"fbjs/lib/warning":11}],26:[function(require,module,exports){
+},{"_process":15,"fbjs/lib/warning":13}],28:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -3247,7 +3461,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = ReactPropTypeLocationNames;
 }).call(this,require('_process'))
-},{"_process":13}],27:[function(require,module,exports){
+},{"_process":15}],29:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -3270,7 +3484,7 @@ var ReactPropTypeLocations = keyMirror({
 });
 
 module.exports = ReactPropTypeLocations;
-},{"fbjs/lib/keyMirror":9}],28:[function(require,module,exports){
+},{"fbjs/lib/keyMirror":11}],30:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -3704,7 +3918,7 @@ function getClassName(propValue) {
 
 module.exports = ReactPropTypes;
 }).call(this,require('_process'))
-},{"./ReactElement":23,"./ReactPropTypeLocationNames":26,"./ReactPropTypesSecret":29,"./getIteratorFn":34,"_process":13,"fbjs/lib/emptyFunction":6,"fbjs/lib/warning":11}],29:[function(require,module,exports){
+},{"./ReactElement":25,"./ReactPropTypeLocationNames":28,"./ReactPropTypesSecret":31,"./getIteratorFn":36,"_process":15,"fbjs/lib/emptyFunction":8,"fbjs/lib/warning":13}],31:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -3721,7 +3935,7 @@ module.exports = ReactPropTypes;
 var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
-},{}],30:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -3764,7 +3978,7 @@ _assign(ReactPureComponent.prototype, ReactComponent.prototype);
 ReactPureComponent.prototype.isPureReactComponent = true;
 
 module.exports = ReactPureComponent;
-},{"./ReactComponent":19,"./ReactNoopUpdateQueue":25,"fbjs/lib/emptyObject":7,"object-assign":12}],31:[function(require,module,exports){
+},{"./ReactComponent":21,"./ReactNoopUpdateQueue":27,"fbjs/lib/emptyObject":9,"object-assign":14}],33:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -3779,7 +3993,7 @@ module.exports = ReactPureComponent;
 'use strict';
 
 module.exports = '15.3.1';
-},{}],32:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -3806,7 +4020,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = canDefineProperty;
 }).call(this,require('_process'))
-},{"_process":13}],33:[function(require,module,exports){
+},{"_process":15}],35:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -3896,7 +4110,7 @@ function checkReactTypeSpec(typeSpecs, values, location, componentName, element,
 
 module.exports = checkReactTypeSpec;
 }).call(this,require('_process'))
-},{"./ReactComponentTreeHook":20,"./ReactPropTypeLocationNames":26,"./ReactPropTypesSecret":29,"./reactProdInvariant":36,"_process":13,"fbjs/lib/invariant":8,"fbjs/lib/warning":11}],34:[function(require,module,exports){
+},{"./ReactComponentTreeHook":22,"./ReactPropTypeLocationNames":28,"./ReactPropTypesSecret":31,"./reactProdInvariant":38,"_process":15,"fbjs/lib/invariant":10,"fbjs/lib/warning":13}],36:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -3938,7 +4152,7 @@ function getIteratorFn(maybeIterable) {
 }
 
 module.exports = getIteratorFn;
-},{}],35:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -3979,7 +4193,7 @@ function onlyChild(children) {
 
 module.exports = onlyChild;
 }).call(this,require('_process'))
-},{"./ReactElement":23,"./reactProdInvariant":36,"_process":13,"fbjs/lib/invariant":8}],36:[function(require,module,exports){
+},{"./ReactElement":25,"./reactProdInvariant":38,"_process":15,"fbjs/lib/invariant":10}],38:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -4019,7 +4233,7 @@ function reactProdInvariant(code) {
 }
 
 module.exports = reactProdInvariant;
-},{}],37:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -4189,9 +4403,9 @@ function traverseAllChildren(children, callback, traverseContext) {
 
 module.exports = traverseAllChildren;
 }).call(this,require('_process'))
-},{"./KeyEscapeUtils":14,"./ReactCurrentOwner":21,"./ReactElement":23,"./getIteratorFn":34,"./reactProdInvariant":36,"_process":13,"fbjs/lib/invariant":8,"fbjs/lib/warning":11}],38:[function(require,module,exports){
+},{"./KeyEscapeUtils":16,"./ReactCurrentOwner":23,"./ReactElement":25,"./getIteratorFn":36,"./reactProdInvariant":38,"_process":15,"fbjs/lib/invariant":10,"fbjs/lib/warning":13}],40:[function(require,module,exports){
 'use strict';
 
 module.exports = require('./lib/React');
 
-},{"./lib/React":16}]},{},[1,2,3,4,5]);
+},{"./lib/React":18}]},{},[1,2,3,4,5,6,7]);
